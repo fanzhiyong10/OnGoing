@@ -16,6 +16,8 @@
 		66441485289F53870015E01E /* OnGoingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66441484289F53870015E01E /* OnGoingTests.swift */; };
 		6644148F289F53870015E01E /* OnGoingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6644148E289F53870015E01E /* OnGoingUITests.swift */; };
 		66441491289F53870015E01E /* OnGoingUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66441490289F53870015E01E /* OnGoingUITestsLaunchTests.swift */; };
+		664414A1289F8C3C0015E01E /* ConfigureOfColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664414A0289F8C3C0015E01E /* ConfigureOfColor.swift */; };
+		664414A4289F8D5D0015E01E /* MelfTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = 664414A3289F8D5D0015E01E /* MelfTask.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,6 +51,8 @@
 		6644148A289F53870015E01E /* OnGoingUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = OnGoingUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6644148E289F53870015E01E /* OnGoingUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnGoingUITests.swift; sourceTree = "<group>"; };
 		66441490289F53870015E01E /* OnGoingUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnGoingUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		664414A0289F8C3C0015E01E /* ConfigureOfColor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConfigureOfColor.swift; sourceTree = "<group>"; };
+		664414A3289F8D5D0015E01E /* MelfTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MelfTask.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,9 +103,12 @@
 		6644146C289F53840015E01E /* OnGoing */ = {
 			isa = PBXGroup;
 			children = (
+				664414A2289F8D470015E01E /* model */,
+				6644149F289F8C180015E01E /* color */,
+				6644149E289F62B70015E01E /* res */,
+				6644149D289F62780015E01E /* controller */,
 				6644146D289F53840015E01E /* AppDelegate.swift */,
 				6644146F289F53840015E01E /* SceneDelegate.swift */,
-				66441471289F53840015E01E /* TodayTaskViewController.swift */,
 				66441473289F53840015E01E /* Main.storyboard */,
 				66441476289F53870015E01E /* Assets.xcassets */,
 				66441478289F53870015E01E /* LaunchScreen.storyboard */,
@@ -125,6 +132,37 @@
 				66441490289F53870015E01E /* OnGoingUITestsLaunchTests.swift */,
 			);
 			path = OnGoingUITests;
+			sourceTree = "<group>";
+		};
+		6644149D289F62780015E01E /* controller */ = {
+			isa = PBXGroup;
+			children = (
+				66441471289F53840015E01E /* TodayTaskViewController.swift */,
+			);
+			path = controller;
+			sourceTree = "<group>";
+		};
+		6644149E289F62B70015E01E /* res */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = res;
+			sourceTree = "<group>";
+		};
+		6644149F289F8C180015E01E /* color */ = {
+			isa = PBXGroup;
+			children = (
+				664414A0289F8C3C0015E01E /* ConfigureOfColor.swift */,
+			);
+			path = color;
+			sourceTree = "<group>";
+		};
+		664414A2289F8D470015E01E /* model */ = {
+			isa = PBXGroup;
+			children = (
+				664414A3289F8D5D0015E01E /* MelfTask.swift */,
+			);
+			path = model;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -258,9 +296,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				664414A4289F8D5D0015E01E /* MelfTask.swift in Sources */,
 				66441472289F53840015E01E /* TodayTaskViewController.swift in Sources */,
 				6644146E289F53840015E01E /* AppDelegate.swift in Sources */,
 				66441470289F53840015E01E /* SceneDelegate.swift in Sources */,
+				664414A1289F8C3C0015E01E /* ConfigureOfColor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
