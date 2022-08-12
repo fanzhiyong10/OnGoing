@@ -61,12 +61,18 @@ enum FrequencyType {
     case onlyOneTime // 仅1次
 }
 
-struct MelfTask {
+class MelfTask {
+    init(taskID: String, name: String) {
+        self.taskID = taskID
+        self.name = name
+    }
     var taskID: String // 任务ID，唯一，不重复
     var name: String // 任务名称
     
     var isAtom: TaskAtom? //任务的原子化属性，原子化则不可分割
     
+    var children: [MelfTask]? // 可能有多个孩子
+    var parent: MelfTask? // 一个父亲
     var childIDs: [String]? // 孩子们
     var parentTaskID: String? // 父亲
     var dependentTaskIDs: [String]? // 依赖
@@ -88,62 +94,93 @@ struct MelfTask {
     
     var frequency_required: FrequencyType? // 任务的频次类型，是否经常做，还是仅做1次
     
+    var level = 0
+    
+    /// 辅助
+    var isHidden = false
+    
     static func creatTasksForDemo() -> [MelfTask] {
         var result = [MelfTask]()
         
         do {
             let taskID = "taskID1"
             let name = "声音分析算法"
-            var task = MelfTask(taskID: taskID, name: name)
+            let task = MelfTask(taskID: taskID, name: name)
             let description = "算法包括：音量、频谱等。\n分两步走：\n1）使用MatLab工具，进行分析。\n2）使用Swift实现"
             task.description = description
             task.childIDs = ["taskID2", "taskID4"]
+            task.level = 0
             result.append(task)
         }
         
         do {
             let taskID = "taskID2"
             let name = "使用MatLab工具，分析声音，包括音量、频谱等"
-            var task = MelfTask(taskID: taskID, name: name)
+            let task = MelfTask(taskID: taskID, name: name)
             let description = "分以下几步：\n1）基本掌握MatLab工具，包括开发环境、语言、调试运行等。\n2）声音分析"
             task.description = description
             task.childIDs = ["taskID3", "taskID5"]
             task.parentTaskID = "taskID1"
+            task.level = 1
             result.append(task)
         }
         
         do {
             let taskID = "taskID3"
             let name = "基本掌握MatLab工具，包括开发环境、语言、调试运行等。"
-            var task = MelfTask(taskID: taskID, name: name)
+            let task = MelfTask(taskID: taskID, name: name)
             let description = "精读以下参考书并做练习：\n1）参考书1：《MATLAB程序设计》，[美]斯蒂芬·J·查普曼著。\n2）参考书2：《MATLAB程序设计》，薛定宇教授著"
             task.description = description
             task.parentTaskID = "taskID2"
+            task.level = 2
             result.append(task)
         }
         
         do {
             let taskID = "taskID5"
             let name = "MatLab的声音分析"
-            var task = MelfTask(taskID: taskID, name: name)
+            let task = MelfTask(taskID: taskID, name: name)
             let description = "三种方法：\n1）google查找。\n2）MatLab参考文档。\n3)相关的数学及薛定宇教授的书"
             task.description = description
             task.parentTaskID = "taskID2"
             task.dependentTaskIDs = ["taskID3"]
+            task.level = 2
             result.append(task)
         }
         
         do {
             let taskID = "taskID4"
             let name = "使用Swift实现，分析声音，包括音量、频谱等"
-            var task = MelfTask(taskID: taskID, name: name)
+            let task = MelfTask(taskID: taskID, name: name)
             let description = "参考刘的算法，详细内容，暂时不清楚"
             task.description = description
             task.parentTaskID = "taskID1"
             task.dependentTaskIDs = ["taskID2"]
+            task.level = 1
             result.append(task)
+        }
+        
+        for task in result {
+            if let childIDs = task.childIDs {
+                task.children = [MelfTask]()
+                for childID in childIDs {
+                    if let tmp = searchByTaskID(childID, tasks: result) {
+                        task.children?.append(tmp)
+                    }
+                }
+            }
         }
 
         return result
+    }
+    
+    static func searchByTaskID(_ taskID: String, tasks: [MelfTask]) -> MelfTask? {
+        for task in tasks {
+            if task.taskID == taskID {
+                return task
+            }
+        }
+        
+        return nil
     }
 }

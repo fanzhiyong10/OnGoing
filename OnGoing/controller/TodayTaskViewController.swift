@@ -10,8 +10,10 @@ import UIKit
 class TodayTaskViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
     var allTasks: [MelfTask]?
+    var allTasks_backup: [MelfTask]?
     func createAllTasks() {
         self.allTasks = MelfTask.creatTasksForDemo()
+        self.allTasks_backup = allTasks
     }
     
     
@@ -109,67 +111,101 @@ class TodayTaskViewController: UIViewController, UITableViewDataSource, UITableV
         return 44
     }
     
+
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: self.cellID, for: indexPath)
 //        cell.selectionStyle = UITableViewCell.SelectionStyle.none
 //
-        cell.textLabel!.text = self.allTasks![indexPath.row].name
-        cell.textLabel!.textColor = .darkGray
         
         cell.separatorInset = UIEdgeInsets.zero
         
 //        cell.textLabel!.text = self.allProducts[indexPath.row].localizedTitle
         
         cell.accessoryType = .none
-        cell.backgroundColor = UIColor.white
-        /*
+        
         let y_center = CGFloat(25)
         if cell.viewWithTag(200) == nil {
             let font = UIFont.systemFont(ofSize: 20)
-            var aRect = CGRect(x: 20, y: 15, width: 120, height: 30)
+            var aRect = CGRect(x: 8, y: 15, width: 120, height: 30)
             
-            let gap: CGFloat = 30
-            
-//            aRect.size.width = 400
+            let gap: CGFloat = 8
             
             do {
-                let lab2 = UILabel(frame: aRect)
-                lab2.tag = 200
-                lab2.font = font
-                lab2.backgroundColor = .clear
-                lab2.text = "声音名称"
-                lab2.textColor = UIColor.darkGray
-//                lab2.textAlignment = .center
-//                lab2.center.x = aRect.center.x
-                lab2.center.y = y_center
-                cell.contentView.addSubview(lab2)
+                aRect.size.width = 30
+                aRect.size.height = 20
+                let button = MarkButton(frame: aRect)
+                button.tag = 200
+                
+                button.center.y = y_center
+                cell.contentView.addSubview(button)
             }
             
             do {
                 aRect.origin.x += aRect.width + gap
-                aRect.size.width = 100
+                aRect.size.width = 300
+                aRect.size.height = 30
                 let lab6 = UILabel(frame: aRect)
                 lab6.tag = 201
                 lab6.font = font
                 lab6.backgroundColor = .clear
-                lab6.text = "文件大小"
+                lab6.text = "任务名称"
                 lab6.textColor = UIColor.darkGray
-//                lab6.textAlignment = .center
                 lab6.center.y = y_center
                 cell.contentView.addSubview(lab6)
             }
         }
         
-        do {
-            let lab = cell.contentView.viewWithTag(200) as! UILabel
-            lab.text = self.allSounds![indexPath.row].name
+        let task = self.allTasks![indexPath.row]
+        
+        var image = UIImage(systemName: "circle.fill")
+        if task.childIDs != nil {
+            // 子任务显示
+            // arrowtriangle.down.fill
+            image = UIImage(systemName: "arrowtriangle.down.fill")
+            
+            if task.children?.first?.isHidden == true {
+                // 子任务隐藏
+                // arrowtriangle.right.fill
+                image = UIImage(systemName: "arrowtriangle.right.fill")
+            }
         }
         
+        let button = cell.contentView.viewWithTag(200) as! MarkButton
+        button.setImage(image, for: .normal)
+        button.indexPath = indexPath
+        button.addTarget(self, action: #selector(tapMark), for: .touchUpInside)
+        
+        let x_level = CGFloat(task.level) * 32 + 8
+        button.frame.origin.x = x_level
+        
+        let safe = cell.contentView.safeAreaLayoutGuide
+        /*
+         // NSLayoutConstraint存在问题，当点击行时，显示会乱，会报定位leadingAnchor冲突
+        button.translatesAutoresizingMaskIntoConstraints = false
+        
+        let x_level = CGFloat(task.level) * 32 + 8
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 30),
+            button.heightAnchor.constraint(equalToConstant: 20),
+            button.centerYAnchor.constraint(equalTo: safe.centerYAnchor, constant: 0),
+            button.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: x_level),
+        ])
+        */
+
         do {
             let lab = cell.contentView.viewWithTag(201) as! UILabel
-            lab.text = "\(self.allSounds![indexPath.row].size!)"
+            lab.text = task.name
+            
+            lab.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                lab.heightAnchor.constraint(equalToConstant: 30),
+                lab.centerYAnchor.constraint(equalTo: safe.centerYAnchor, constant: 0),
+                lab.leadingAnchor.constraint(equalTo: button.trailingAnchor, constant: 12),
+                lab.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -12),
+            ])
         }
-*/
+        
         //背景颜色：相邻的两行颜色不同（奇偶不同）
         if indexPath.row % 2 == 0 {
 //            cell.backgroundColor = ConfigureOfColor.evenRowBackgroundColorV2 // iPad OK，iPhone 不行
@@ -180,7 +216,7 @@ class TodayTaskViewController: UIViewController, UITableViewDataSource, UITableV
             cell.contentView.backgroundColor = ConfigureOfColor.oddRowBackgroundColorV2
         }
         
-        if self.selected == indexPath.row {
+        if self.selected_indexPath == indexPath {
             cell.accessoryType = .checkmark
             cell.backgroundColor = UIColor.yellow // accessory
             cell.contentView.backgroundColor = UIColor.yellow // contentView
@@ -189,11 +225,107 @@ class TodayTaskViewController: UIViewController, UITableViewDataSource, UITableV
         return cell
     }
     
-    var selected = 0
+    var selected_indexPath: IndexPath?
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        self.selected = indexPath.row
+        self.selected_indexPath = indexPath
         
+        tableView.reloadData()
+    }
+    
+    @objc func tapMark(_ markButton: MarkButton) {
+        guard let indexPath = markButton.indexPath else { return}
+        
+        // 选中行
+        self.selected_indexPath = indexPath
+        
+        let task = self.allTasks![indexPath.row]
+        
+        guard let childIDs = task.childIDs else { return }
+        
+        var isClosed = true
+        for task in self.allTasks! {
+            if childIDs.contains(task.taskID) {
+                // 有
+                isClosed = false
+            }
+        }
+        
+        if isClosed {
+            // 关闭，则打开
+            showChildren(markButton)
+        } else {
+            // 打开，则关闭
+            hideChildren(markButton)
+        }
+    }
+    
+    func showChildren(_ markButton: MarkButton) {
+        guard let indexPath = markButton.indexPath else { return}
+        
+        let task = self.allTasks![indexPath.row]
+        
+        guard task.childIDs != nil else { return }
+        
+        // 递归找出 需要 隐藏的 子任务
+        recurseTask(task, isHidden: false)
+        
+        self.allTasks = [MelfTask]()
+        for task in self.allTasks_backup! {
+            if task.isHidden == false {
+                self.allTasks?.append(task)
+            }
+        }
+        
+        tableView.reloadData()
+    }
+    
+    /// 任务的子任务打标识：是否显示
+    func recurseTask(_ task: MelfTask, isHidden: Bool=true) {
+        // 递归找出 需要 隐藏的 子任务
+        let task_cal = task
+        var end = false
+        while end == false {
+            if let tmps = task_cal.children {
+                for tmp in tmps {
+                    tmp.isHidden = isHidden
+                    
+                    if tmp.childIDs == nil {
+                        // 没有
+                        continue
+                    }
+                    
+                    // 递归
+                    recurseTask(tmp, isHidden: isHidden)
+                }
+            }
+            
+            end = true
+        }
+    }
+    
+    func hideChildren(_ markButton: MarkButton) {
+//        let image = UIImage(systemName: "arrowtriangle.right.fill")
+//        markButton.setImage(image, for: .normal)
+        
+        guard let indexPath = markButton.indexPath else { return}
+        let task = self.allTasks![indexPath.row]
+        
+        guard task.childIDs != nil else { return }
+        
+        // 递归找出 需要 隐藏的 子任务
+        recurseTask(task, isHidden: true)
+        
+        self.allTasks = [MelfTask]()
+        for task in self.allTasks_backup! {
+            if task.isHidden == false {
+                self.allTasks?.append(task)
+            }
+        }
         tableView.reloadData()
     }
 }
 
+class MarkButton: UIButton {
+    var indexPath: IndexPath?
+    var isOpen = true
+}
