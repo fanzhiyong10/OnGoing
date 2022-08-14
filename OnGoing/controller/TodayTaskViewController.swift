@@ -7,34 +7,315 @@
 
 import UIKit
 
+/// 今日任务
+///
+/// 包括四个部分
+/// - 抬头：添加新任务
+/// - 任务详细
+/// - 任务统计
+/// - 任务列表
+///
+/// 旋转
+/// - 仅允许竖版，不旋转
 class TodayTaskViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     
     var allTasks: [MelfTask]?
     var allTasks_backup: [MelfTask]?
     func createAllTasks() {
-        self.allTasks = MelfTask.creatTasksForDemo()
-        self.allTasks_backup = allTasks
+        self.allTasks = MelfTask.createAllTasks()
+        self.allTasks_backup = self.allTasks
     }
     
+    var statisticView: UIView!
+    
+    var todayTaskTitleLabel: UILabel! // 今日任务
+    
+    var newTaskButton: UIButton! // 新增任务
+    
+    var tableView: UITableView!
     
     
-    @IBOutlet weak var tableView: UITableView!
+    /// 设置界面
+    ///
+    /// 设置顺序：自上而下
+    /// - 顶部区域
+    /// - 任务详细
+    /// - 统计
+    /// - 表单
+    func createInterface() {
+        // 1. 顶部区域
+        self.createTopBlock()
+        
+        // 2. 任务详细
+        self.createTaskView()
+
+        // 3. 统计
+        self.createStatisticView()
+
+        // 4. 创建表单
+        self.createTableView()
+    }
     
+
+    
+    /// 顶部区域
+    ///
+    /// 两项：
+    /// - 今日任务：UILabel
+    /// - 新增任务：UIButton
+    ///
+    ///
+    /// 显示注意项：
+    /// - 左右边距，相等
+    func createTopBlock() {
+        // 今日任务：UILabel
+        let aRect = CGRect(x: 0, y: 0, width: 150, height: 31)
+        self.todayTaskTitleLabel = UILabel(frame: aRect)
+        self.todayTaskTitleLabel.text = "今日任务"
+        self.view.addSubview(self.todayTaskTitleLabel)
+        
+        let safe = self.view.safeAreaLayoutGuide
+        self.todayTaskTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            self.todayTaskTitleLabel.topAnchor.constraint(equalTo: safe.topAnchor, constant: 8),
+            self.todayTaskTitleLabel.heightAnchor.constraint(equalToConstant: 31),
+            self.todayTaskTitleLabel.widthAnchor.constraint(equalToConstant: 150),
+            self.todayTaskTitleLabel.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 12),
+        ])
+        
+        // 新增任务：UIButton
+        self.newTaskButton = UIButton(frame: aRect)
+        let image = UIImage(systemName: "plus")
+        self.newTaskButton.setImage(image, for: .normal)
+        self.view.addSubview(self.newTaskButton)
+        
+        self.newTaskButton.addTarget(self, action: #selector(addNewTask), for: .touchUpInside)
+        
+        self.newTaskButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            self.newTaskButton.centerYAnchor.constraint(equalTo: self.todayTaskTitleLabel.centerYAnchor),
+            self.newTaskButton.heightAnchor.constraint(equalToConstant: 31),
+            self.newTaskButton.widthAnchor.constraint(equalToConstant: 44),
+            self.newTaskButton.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: -12),
+        ])
+    }
+    
+    /// 新增任务
+    @objc func addNewTask() {
+        let vc = NewTaskViewController()
+        self.navigationController?.pushViewController(vc, animated: true)
+    }
+    
+    var taskView: TaskView!
+    func createTaskView() {
+        // 定位task
+        let task = self.allTasks![self.selected_indexPath!.row]
+        
+        // ===== 1. 滚动视图
+        let aRect = CGRect(x: 0, y: 0, width: 414, height: 334)
+        self.taskView = TaskView(frame: aRect, task: task)
+        self.view.addSubview(self.taskView)
+        self.taskView.backgroundColor = UIColor.systemPink.withAlphaComponent(0.9)
+        
+        self.taskView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 1.1 heightAnchor可以再优化
+        let safe = self.view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            self.taskView.topAnchor.constraint(equalTo: self.todayTaskTitleLabel.bottomAnchor, constant: 8),
+            self.taskView.heightAnchor.constraint(equalToConstant: 334),
+            self.taskView.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 0),
+            self.taskView.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: 0),
+        ])
+    }
+    
+    /// 统计区域
+    ///
+    /// 顺序如下
+    /// - 正在办理
+    /// - 待办任务
+    /// - 已办任务
+    func createStatisticView() {
+        let aRect = CGRect(x: 0, y: 0, width: 414, height: 123)
+        self.statisticView = UIView(frame: aRect)
+        self.view.addSubview(self.statisticView)
+        
+        self.statisticView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 1.1 heightAnchor可以再优化
+        var safe = self.view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            self.statisticView.topAnchor.constraint(equalTo: self.taskView.bottomAnchor, constant: 8),
+            self.statisticView.heightAnchor.constraint(equalToConstant: 123),
+            self.statisticView.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 0),
+            self.statisticView.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: 0),
+        ])
+        
+        // 统计项
+        // 1. 正在办理
+        // 1.1 button
+        let rect_button = CGRect(x: 0, y: 0, width: 133, height: 31)
+        let rect_Label = CGRect(x: 0, y: 0, width: 50, height: 21)
+        self.going_button = UIButton(frame: rect_button)
+        let image = UIImage(systemName: "circle")
+        self.going_button.setImage(image, for: .normal)
+        self.going_button.setTitle("正在办理", for: .normal)
+        self.going_button.setTitleColor(UIColor.systemBlue, for: .normal)
+        self.statisticView.addSubview(self.going_button)
+        
+        self.going_button.translatesAutoresizingMaskIntoConstraints = false
+        
+        safe = self.statisticView.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            self.going_button.topAnchor.constraint(equalTo: safe.topAnchor, constant: 8),
+            self.going_button.heightAnchor.constraint(equalToConstant: 31),
+            self.going_button.widthAnchor.constraint(equalToConstant: 123),
+            self.going_button.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 12),
+        ])
+
+        // 1.2 label
+        self.going_Label = UILabel(frame: rect_Label)
+        self.going_Label.text = "99"
+        self.statisticView.addSubview(self.going_Label)
+        
+        self.going_Label.translatesAutoresizingMaskIntoConstraints = false
+        
+        safe = self.going_button.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            self.going_Label.centerYAnchor.constraint(equalTo: safe.centerYAnchor),
+            self.going_Label.heightAnchor.constraint(equalToConstant: 21),
+            self.going_Label.widthAnchor.constraint(equalToConstant: 50),
+            self.going_Label.leadingAnchor.constraint(equalTo: safe.trailingAnchor, constant: 30),
+        ])
+        
+        // 2. 待办任务
+        // 2.1 button
+        self.notBegin_button = UIButton(frame: rect_button)
+//        let image = UIImage(systemName: "circle")
+        self.notBegin_button.setImage(image, for: .normal)
+        self.notBegin_button.setTitle("待办任务", for: .normal)
+        self.notBegin_button.setTitleColor(UIColor.systemBlue, for: .normal)
+        self.statisticView.addSubview(self.notBegin_button)
+        
+        self.notBegin_button.translatesAutoresizingMaskIntoConstraints = false
+        
+        safe = self.going_button.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            self.notBegin_button.topAnchor.constraint(equalTo: safe.bottomAnchor, constant: 8),
+            self.notBegin_button.heightAnchor.constraint(equalTo: safe.heightAnchor),
+            self.notBegin_button.widthAnchor.constraint(equalTo: safe.widthAnchor),
+            self.notBegin_button.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
+        ])
+
+        // 2.2 label
+        self.notBegin_Label = UILabel(frame: rect_Label)
+        self.notBegin_Label.text = "199"
+        self.statisticView.addSubview(self.notBegin_Label)
+        
+        self.notBegin_Label.translatesAutoresizingMaskIntoConstraints = false
+        
+        safe = self.notBegin_button.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            self.notBegin_Label.centerYAnchor.constraint(equalTo: safe.centerYAnchor),
+            self.notBegin_Label.heightAnchor.constraint(equalTo: self.going_Label.heightAnchor),
+            self.notBegin_Label.widthAnchor.constraint(equalTo: self.going_Label.widthAnchor),
+            self.notBegin_Label.leadingAnchor.constraint(equalTo: self.going_Label.leadingAnchor),
+        ])
+        
+        // 3. 已办任务
+        // 3.1 button
+        self.closed_button = UIButton(frame: rect_button)
+//        let image = UIImage(systemName: "circle")
+        self.closed_button.setImage(image, for: .normal)
+        self.closed_button.setTitle("已办任务", for: .normal)
+        self.closed_button.setTitleColor(UIColor.systemBlue, for: .normal)
+        self.statisticView.addSubview(self.closed_button)
+        
+        self.closed_button.translatesAutoresizingMaskIntoConstraints = false
+        
+        safe = self.notBegin_button.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            self.closed_button.topAnchor.constraint(equalTo: safe.bottomAnchor, constant: 8),
+            self.closed_button.heightAnchor.constraint(equalTo: safe.heightAnchor),
+            self.closed_button.widthAnchor.constraint(equalTo: safe.widthAnchor),
+            self.closed_button.leadingAnchor.constraint(equalTo: safe.leadingAnchor),
+        ])
+
+        // 3.2 label
+        self.closed_Label = UILabel(frame: rect_Label)
+        self.closed_Label.text = "199"
+        self.statisticView.addSubview(self.closed_Label)
+        
+        self.closed_Label.translatesAutoresizingMaskIntoConstraints = false
+        
+        safe = self.closed_button.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            self.closed_Label.centerYAnchor.constraint(equalTo: safe.centerYAnchor),
+            self.closed_Label.heightAnchor.constraint(equalTo: self.going_Label.heightAnchor),
+            self.closed_Label.widthAnchor.constraint(equalTo: self.going_Label.widthAnchor),
+            self.closed_Label.leadingAnchor.constraint(equalTo: self.going_Label.leadingAnchor),
+        ])
+    }
+    
+    var going_button: UIButton! // 正在办理
+    var going_Label: UILabel! // 正在办理
+    var notBegin_button: UIButton! // 待办任务
+    var notBegin_Label: UILabel! // 待办任务
+    var closed_button: UIButton! // 已办任务
+    var closed_Label: UILabel! // 已办任务
+    
+    /// 创建表单
+    func createTableView() {
+        let aRect = CGRect(x: 0, y: 0, width: 414, height: 342)
+        self.tableView = UITableView(frame: aRect)
+        self.view.addSubview(self.tableView)
+        
+        self.tableView.translatesAutoresizingMaskIntoConstraints = false
+        
+        // 1.1 heightAnchor可以再优化
+        let safe = self.view.safeAreaLayoutGuide
+        NSLayoutConstraint.activate([
+            self.tableView.topAnchor.constraint(equalTo: self.statisticView.bottomAnchor, constant: 8),
+            self.tableView.bottomAnchor.constraint(equalTo: safe.bottomAnchor, constant: -8),
+            self.tableView.leadingAnchor.constraint(equalTo: safe.leadingAnchor, constant: 0),
+            self.tableView.trailingAnchor.constraint(equalTo: safe.trailingAnchor, constant: 0),
+        ])
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        self.navigationItem.title = "任务台"
+        
         self.createAllTasks()
+        
+        // 界面，手工配置
+        self.createInterface()
         
         // Do any additional setup after loading the view.
         // 设置tableView
+        
         self.tableView.register(UITableViewCell.self, forCellReuseIdentifier: self.cellID)
         self.tableView.register(UITableViewHeaderFooterView.self, forHeaderFooterViewReuseIdentifier: self.headerID)
 
         self.tableView.dataSource = self
         self.tableView.delegate = self
+        
+    }
+    
+    /// 控制器：仅支持portrait
+    override var supportedInterfaceOrientations : UIInterfaceOrientationMask {return UIInterfaceOrientationMask.portrait}
+    
 
+    
+    func changeScrollView() {
+        let task = self.allTasks![self.selected_indexPath!.row]
+        self.taskView.changeTask(task: task)
     }
 
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         guard self.allTasks != nil else {
             return 0
@@ -55,7 +336,8 @@ class TodayTaskViewController: UIViewController, UITableViewDataSource, UITableV
         // section：背景色
         headerView.backgroundView = UIView()
 //        headerView.backgroundView?.backgroundColor = ConfigureOfColor.sectionBackgroundColorV2
-        headerView.backgroundView?.backgroundColor = UIColor.lightGray.withAlphaComponent(0.25)
+        headerView.backgroundView?.backgroundColor = UIColor.systemGray5.withAlphaComponent(0.8)
+
         let y_center = CGFloat(25)
         if headerView.viewWithTag(1000) == nil {
             var width: CGFloat = 150
@@ -126,7 +408,7 @@ class TodayTaskViewController: UIViewController, UITableViewDataSource, UITableV
         
         let y_center = CGFloat(25)
         if cell.viewWithTag(200) == nil {
-            let font = UIFont.systemFont(ofSize: 20)
+            let font = UIFont.systemFont(ofSize: 17)
             var aRect = CGRect(x: 8, y: 15, width: 120, height: 30)
             
             let gap: CGFloat = 8
@@ -208,28 +490,33 @@ class TodayTaskViewController: UIViewController, UITableViewDataSource, UITableV
         
         //背景颜色：相邻的两行颜色不同（奇偶不同）
         if indexPath.row % 2 == 0 {
-//            cell.backgroundColor = ConfigureOfColor.evenRowBackgroundColorV2 // iPad OK，iPhone 不行
-            cell.contentView.backgroundColor = ConfigureOfColor.evenRowBackgroundColorV2
+//            cell.contentView.backgroundColor = ConfigureOfColor.evenRowBackgroundColorV2
         }
         else {
-//            cell.backgroundColor = ConfigureOfColor.oddRowBackgroundColorV2
-            cell.contentView.backgroundColor = ConfigureOfColor.oddRowBackgroundColorV2
+//            cell.contentView.backgroundColor = ConfigureOfColor.oddRowBackgroundColorV2
         }
         
         if self.selected_indexPath == indexPath {
             cell.accessoryType = .checkmark
             cell.backgroundColor = UIColor.yellow // accessory
             cell.contentView.backgroundColor = UIColor.yellow // contentView
+        } else {
+            cell.accessoryType = .none
+            cell.backgroundColor = UIColor.clear // accessory
+            cell.contentView.backgroundColor = UIColor.clear // contentView
         }
         
         return cell
     }
     
-    var selected_indexPath: IndexPath?
+    var selected_indexPath: IndexPath? = IndexPath(row: 0, section: 0)
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         self.selected_indexPath = indexPath
         
         tableView.reloadData()
+        
+        // 任务详细信息
+        self.changeScrollView()
     }
     
     @objc func tapMark(_ markButton: MarkButton) {
@@ -240,17 +527,9 @@ class TodayTaskViewController: UIViewController, UITableViewDataSource, UITableV
         
         let task = self.allTasks![indexPath.row]
         
-        guard let childIDs = task.childIDs else { return }
+        guard task.childIDs != nil else { return }
         
-        var isClosed = true
-        for task in self.allTasks! {
-            if childIDs.contains(task.taskID) {
-                // 有
-                isClosed = false
-            }
-        }
-        
-        if isClosed {
+        if task.children?.first?.isHidden == true {
             // 关闭，则打开
             showChildren(markButton)
         } else {
@@ -304,9 +583,6 @@ class TodayTaskViewController: UIViewController, UITableViewDataSource, UITableV
     }
     
     func hideChildren(_ markButton: MarkButton) {
-//        let image = UIImage(systemName: "arrowtriangle.right.fill")
-//        markButton.setImage(image, for: .normal)
-        
         guard let indexPath = markButton.indexPath else { return}
         let task = self.allTasks![indexPath.row]
         
